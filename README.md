@@ -1,3 +1,8 @@
+omposer install
+php artisan migrate
+php artisan serve
+
+
 Step 2: Install maatwebsite/excel Package
 
 In this step we need to install maatwebsite/excel package via the Composer package manager, so one your terminal and fire bellow command:
