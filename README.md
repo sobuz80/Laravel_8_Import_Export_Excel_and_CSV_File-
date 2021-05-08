@@ -1,62 +1,331 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+Step 2: Install maatwebsite/excel Package
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+In this step we need to install maatwebsite/excel package via the Composer package manager, so one your terminal and fire bellow command:
 
-## About Laravel
+composer require maatwebsite/excel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Now open config/app.php file and add service provider and aliase.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+config/app.php
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+'providers' => [
 
-## Learning Laravel
+	....
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+	Maatwebsite\Excel\ExcelServiceProvider::class,
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+],
 
-## Laravel Sponsors
+'aliases' => [
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+	....
 
-### Premium Partners
+	'Excel' => Maatwebsite\Excel\Facades\Excel::class,
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
+],
 
-## Contributing
+Read Also: Laravel 8 CRUD Application Tutorial for Beginners
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Step 3: Create Dummy Records
 
-## Code of Conduct
+In this step, we have to require "users" table with some dummy records, so we can simply import and export. So first you have to run default migration that provided by laravel using following command:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+php artisan migrate
 
-## Security Vulnerabilities
+After that we need to run following command to generate dummy users:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+php artisan tinker
 
-## License
+User::factory()->count(20)->create()
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Step 4: Add Routes
+
+In this step, we need to create route of import export file. so open your "routes/web.php" file and add following route.
+
+routes/web.php
+
+<?php
+
+  
+
+use Illuminate\Support\Facades\Route;
+
+    
+
+use App\Http\Controllers\MyController;
+
+  
+
+/*
+
+|--------------------------------------------------------------------------
+
+| Web Routes
+
+|--------------------------------------------------------------------------
+
+|
+
+| Here is where you can register web routes for your application. These
+
+| routes are loaded by the RouteServiceProvider within a group which
+
+| contains the "web" middleware group. Now create something great!
+
+|
+
+*/
+
+  
+
+Route::get('importExportView', [MyController::class, 'importExportView']);
+
+Route::get('export', [MyController::class, 'export'])->name('export');
+
+Route::post('import', [MyController::class, 'import'])->name('import');
+
+Step 5: Create Import Class
+
+In maatwebsite 3 version provide way to built import class and we have to use in controller. So it would be great way to create new Import class. So you have to run following command and change following code on that file:
+
+php artisan make:import UsersImport --model=User
+
+app/Imports/UsersImport.php
+
+<?php
+
+  
+
+namespace App\Imports;
+
+  
+
+use App\Models\User;
+
+use Maatwebsite\Excel\Concerns\ToModel;
+
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+
+  
+
+class UsersImport implements ToModel, WithHeadingRow
+
+{
+
+    /**
+
+    * @param array $row
+
+    *
+
+    * @return \Illuminate\Database\Eloquent\Model|null
+
+    */
+
+    public function model(array $row)
+
+    {
+
+        return new User([
+
+            'name'     => $row['name'],
+
+            'email'    => $row['email'], 
+
+            'password' => \Hash::make($row['password']),
+
+        ]);
+
+    }
+
+}
+
+You can download demo csv file from here: Demo CSV File.
+
+Step 6: Create Export Class
+
+maatwebsite 3 version provide way to built export class and we have to use in controller. So it would be great way to create new Export class. So you have to run following command and change following code on that file:
+
+php artisan make:export UsersExport --model=User
+
+app/Exports/UsersExport.php
+
+<?php
+
+  
+
+namespace App\Exports;
+
+  
+
+use App\Models\User;
+
+use Maatwebsite\Excel\Concerns\FromCollection;
+
+  
+
+class UsersExport implements FromCollection
+
+{
+
+    /**
+
+    * @return \Illuminate\Support\Collection
+
+    */
+
+    public function collection()
+
+    {
+
+        return User::all();
+
+    }
+
+}
+
+Step 7: Create Controller
+
+In this step, now we should create new controller as MyController in this path "app/Http/Controllers/MyController.php". this controller will manage all importExportView, export and import request and return response, so put bellow content in controller file:
+
+app/Http/Controllers/MyController.php
+
+<?php
+
+     
+
+namespace App\Http\Controllers;
+
+    
+
+use Illuminate\Http\Request;
+
+use App\Exports\UsersExport;
+
+use App\Imports\UsersImport;
+
+use Maatwebsite\Excel\Facades\Excel;
+
+    
+
+class MyController extends Controller
+
+{
+
+    /**
+
+    * @return \Illuminate\Support\Collection
+
+    */
+
+    public function importExportView()
+
+    {
+
+       return view('import');
+
+    }
+
+     
+
+    /**
+
+    * @return \Illuminate\Support\Collection
+
+    */
+
+    public function export() 
+
+    {
+
+        return Excel::download(new UsersExport, 'users.xlsx');
+
+    }
+
+     
+
+    /**
+
+    * @return \Illuminate\Support\Collection
+
+    */
+
+    public function import() 
+
+    {
+
+        Excel::import(new UsersImport,request()->file('file'));
+
+             
+
+        return back();
+
+    }
+
+}
+
+Step 8: Create Blade File
+
+In Last step, let's create import.blade.php(resources/views/import.blade.php) for layout and we will write design code here and put following code:
+
+resources/views/import.blade.php
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>Laravel 8 Import Export Excel to database Example - ItSolutionStuff.com</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" />
+
+</head>
+
+<body>
+
+   
+
+<div class="container">
+
+    <div class="card bg-light mt-3">
+
+        <div class="card-header">
+
+            Laravel 8 Import Export Excel to database Example - ItSolutionStuff.com
+
+        </div>
+
+        <div class="card-body">
+
+            <form action="{{ route('import') }}" method="POST" enctype="multipart/form-data">
+
+                @csrf
+
+                <input type="file" name="file" class="form-control">
+
+                <br>
+
+                <button class="btn btn-success">Import User Data</button>
+
+                <a class="btn btn-warning" href="{{ route('export') }}">Export User Data</a>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+   
+
+</body>
+
+</html>
+
+Now you can check on your laravel 8 application.
+
+Now we are ready to run our example so run bellow command so quick run:
+
+php artisan serve
